@@ -114,7 +114,7 @@ def engine(k, num_operations, graph, times, num_stations=10,
                                     - inverse -> Inverse subset
 
     Returns:
-        (Individual): Best individual
+        (Individual): Best individual-ç
         (list(float)): Fitness of the bests solutions for every generation. Useful for plotting
         (list(float)): Mean fitness of the population for every generation. Useful for plotting
     """
@@ -162,6 +162,8 @@ def engine(k, num_operations, graph, times, num_stations=10,
 
         # Evaluation
         population = rank_population(k, graph, times, new_generation, i)
+        # print(f"population {i}")
+        print(f"Gen {i}; Best Fitness: {population[0].fitness}; Cycle time: {population[0].get_cycle_time(times)}")
 
     if (population[0].calc_violations(graph)) > 0:
         print("SOLUCION NO VALIDA: ", population[0].calc_violations(graph))
@@ -169,7 +171,20 @@ def engine(k, num_operations, graph, times, num_stations=10,
     print(f"Parameters of the best solution : {[i+1 for i in population[0].code]}")
     print(f"Best solution reached after {population[0].gen} generations.")
     print(f"Fitness of the best solution : {population[0].fitness}")
-
+    print(f"Cycle time of the best solution: {population[0].get_cycle_time(times)}")
+    """
+    for station in population[0].code:
+        if station == 0:
+            print("|1| | | | |")
+        if station == 1:
+            print("| |2| | | |")
+        if station == 2:
+            print("| | |3| | |")
+        if station == 3:
+            print("| | | |4| |")
+        if station == 4:
+            print("| | | | |5|")
+    """
     return population[0], best, mean
 
 

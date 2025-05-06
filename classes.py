@@ -87,7 +87,7 @@ class Individual:
         # No scalling factor
         # self.fitness = max(time_op) + (k * self.calc_violations(graph)) if (scalling_factor is 0) else
         # exp(-scalling_factor * (max(time_op) + k * self.calc_violations(graph)))
-        self.fitness = max(time_op) + (k * self.calc_violations(graph))
+        self.fitness = max(time_op) + (10 * k * self.calc_violations(graph))
         self.gen = gen
 
         return self.fitness
@@ -200,3 +200,10 @@ class Individual:
                          mut_type=self.mutate.__name__.split('_')[-1])
 
         return ch1, ch2
+
+    def get_cycle_time(self, times):
+        station_times = [0] * self.stations
+        for op in range(self.operations):
+            station = int(self.code[op]) % self.stations
+            station_times[station] += times[op]
+        return max(station_times)
