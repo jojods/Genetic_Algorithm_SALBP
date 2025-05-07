@@ -128,11 +128,27 @@ def engine(k, num_operations, graph, times, num_stations=10,
 
     select = eval('select_by_' + sel_type)
 
+    # Initialize stagnation tracking
+    best_fitness_so_far = float('inf')
+    stagnation_counter = 0
+
     for i in range(iterations):
 
         best.append(population[0].fitness)
         mean.append(reduce(lambda x, y: x + y.fitness, population, 0)/pop_size)
         if population[0].gen < i - 50:
+            break
+
+        # Check for fitness stagnation
+        current_best = population[0].fitness
+        if current_best < best_fitness_so_far:
+            best_fitness_so_far = current_best
+            stagnation_counter = 0
+        else:
+            stagnation_counter += 1
+
+        if stagnation_counter >= 50:
+            print(f"Stopped early at generation {i}: No improvement for 50 consecutive generations.")
             break
 
         # Elitism

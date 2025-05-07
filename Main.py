@@ -5,6 +5,6 @@ if __name__ == '__main__':
     num_stations = 6
 
     engine(k, num_op, graph, times, num_stations=num_stations,
-           pop_size=2000, iterations=100,
-           perc_elitism=10 / 100, perc_mat=0.20, sel_type='roulette', cross_type='SP',
+           pop_size=5000, iterations=1000,
+           perc_elitism=10 / 100, perc_mat=0.40, sel_type='roulette', cross_type='SP',
            mutation_rate=0.25, mut_type='heur')
