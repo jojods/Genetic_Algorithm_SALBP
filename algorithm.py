@@ -47,7 +47,7 @@ def rank_population(k, graph, times, pop, gen):
         (list(Individual)): Sorted population
     """
 
-    return sorted(pop, key=lambda x:x.calc_fitness(gen, graph, times, k=k*10, scalling_factor=0) if x.fitness is 0 else x.fitness, reverse=False)
+    return sorted(pop, key=lambda x:x.calc_fitness(gen, graph, times, k=k*10, scalling_factor=0) if x.fitness == 0 else x.fitness, reverse=False)
 
 
 def select_by_tournament_(population):
@@ -136,20 +136,11 @@ def engine(k, num_operations, graph, times, num_stations=10,
 
         best.append(population[0].fitness)
         mean.append(reduce(lambda x, y: x + y.fitness, population, 0)/pop_size)
-        if population[0].gen < i - 50:
+        # Break after:
+        if population[0].gen < i - 5:
             break
 
-        # Check for fitness stagnation
-        current_best = population[0].fitness
-        if current_best < best_fitness_so_far:
-            best_fitness_so_far = current_best
-            stagnation_counter = 0
-        else:
-            stagnation_counter += 1
 
-        if stagnation_counter >= 50:
-            print(f"Stopped early at generation {i}: No improvement for 50 consecutive generations.")
-            break
 
         # Elitism
         new_generation = population[:int(perc_elitism*pop_size)]
@@ -178,29 +169,17 @@ def engine(k, num_operations, graph, times, num_stations=10,
 
         # Evaluation
         population = rank_population(k, graph, times, new_generation, i)
-        # print(f"population {i}")
+        # print(".")
         print(f"Gen {i}; Best Fitness: {population[0].fitness}; Cycle time: {population[0].get_cycle_time(times)}")
 
-    if (population[0].calc_violations(graph)) > 0:
-        print("SOLUCION NO VALIDA: ", population[0].calc_violations(graph))
+    if (population[0].calc_violations(graph, True)) > 0:
+        print("SOLUCION NO VALIDA: ", population[0].calc_violations(graph, False))
 
     print(f"Parameters of the best solution : {[i+1 for i in population[0].code]}")
     print(f"Best solution reached after {population[0].gen} generations.")
     print(f"Fitness of the best solution : {population[0].fitness}")
     print(f"Cycle time of the best solution: {population[0].get_cycle_time(times)}")
-    """
-    for station in population[0].code:
-        if station == 0:
-            print("|1| | | | |")
-        if station == 1:
-            print("| |2| | | |")
-        if station == 2:
-            print("| | |3| | |")
-        if station == 3:
-            print("| | | |4| |")
-        if station == 4:
-            print("| | | | |5|")
-    """
+
     return population[0], best, mean
 
 
@@ -322,7 +301,7 @@ def compare_crossover(k, num_operations, graph, times, num_stations=10):
     plt.legend(frameon=False, fontsize='large')
     plt.show()
 
-
+# Doesn't work for David in his computer. best returns as an empty list.
 def compare_selection(k, num_operations, graph, times, num_stations=10):
     """
     Compares selection type and plots them
@@ -340,12 +319,18 @@ def compare_selection(k, num_operations, graph, times, num_stations=10):
                            pop_size=200, iterations=200,
                            perc_elitism=10 / 200, perc_mat=0.5, sel_type='roulette', cross_type='SP',
                            mutation_rate=0.20, mut_type='heur')
+    # print(f"Parameters of the best solution : {[i+1 for i in best]}")
 
     best = list(filter(f, best))
     mean = list(filter(f, mean))
-    plt.plot(mean, color='blue', linestyle=':')
-    plt.plot(best, label='Roulette', color='blue')
-    bests.append(best[-1])
+    if best:  # Check if list is not empty
+        plt.plot(mean, color='blue', linestyle=':')
+        plt.plot(best, label='Roulette', color='blue')
+        bests.append(best[-1])
+    else:
+        print("Warning: No valid data for Roulette selection")
+        bests.append(float('inf'))  # Append a default high value
+
 
     _, best, mean = engine(k, num_operations, graph, times, num_stations=num_stations,
                            pop_size=200, iterations=200,
@@ -354,9 +339,13 @@ def compare_selection(k, num_operations, graph, times, num_stations=10):
 
     best = list(filter(f, best))
     mean = list(filter(f, mean))
-    plt.plot(mean, color='red', linestyle=':')
-    plt.plot(best, label='Rank', color='red')
-    bests.append(best[-1])
+    if best:  # Check if list is not empty
+        plt.plot(mean, color='red', linestyle=':')
+        plt.plot(best, label='Rank', color='red')
+        bests.append(best[-1])
+    else:
+        print("Warning: No valid data for Roulette selection")
+        bests.append(float('inf'))  # Append a default high value
 
     _, best, mean = engine(k, num_operations, graph, times, num_stations=num_stations,
                            pop_size=200, iterations=200,
@@ -365,9 +354,14 @@ def compare_selection(k, num_operations, graph, times, num_stations=10):
 
     best = list(filter(f, best))
     mean = list(filter(f, mean))
-    plt.plot(mean, color='green', linestyle=':')
-    plt.plot(best, label='Tournament', color='green')
-    bests.append(best[-1])
+    if best:  # Check if list is not empty
+        plt.plot(mean, color='green', linestyle=':')
+        plt.plot(best, label='Tournament', color='green')
+        bests.append(best[-1])
+    else:
+        print("Warning: No valid data for Roulette selection")
+        bests.append(float('inf'))  # Append a default high value
+
     plt.yscale('log')
     ticks = sorted(bests + [1000, 3000])
 

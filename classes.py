@@ -47,11 +47,12 @@ class Individual:
     def fitness(self, fitness):
         self._fitness = fitness
 
-    def calc_violations(self, graph):
+    def calc_violations(self, graph, is_last):
         """
         Calculates the number of precedence violations
 
         Args:
+            is_last: if True, prints what is the violation
             graph (dict): precedence graph of the problem
 
         Returns:
@@ -61,6 +62,8 @@ class Individual:
         for op in range(self.operations):
             for neighbor in graph[op]:
                 if self.code[neighbor] < self.code[op]:
+                    if is_last:
+                        print(f"{op}: {self.code[op]} -> {self.code[neighbor]}")
                     violations += 1
         return violations
 
@@ -87,7 +90,7 @@ class Individual:
         # No scalling factor
         # self.fitness = max(time_op) + (k * self.calc_violations(graph)) if (scalling_factor is 0) else
         # exp(-scalling_factor * (max(time_op) + k * self.calc_violations(graph)))
-        self.fitness = max(time_op) + (10 * k * self.calc_violations(graph))
+        self.fitness = max(time_op) + (10 * k * self.calc_violations(graph, False))
         self.gen = gen
 
         return self.fitness
