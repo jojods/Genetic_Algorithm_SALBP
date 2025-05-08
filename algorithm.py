@@ -137,7 +137,7 @@ def engine(k, num_operations, graph, times, num_stations=10,
         best.append(population[0].fitness)
         mean.append(reduce(lambda x, y: x + y.fitness, population, 0)/pop_size)
         # Break after:
-        if population[0].gen < i - 5:
+        if population[0].gen < i - 50:
             break
 
 

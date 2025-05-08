@@ -90,7 +90,7 @@ class Individual:
         # No scalling factor
         # self.fitness = max(time_op) + (k * self.calc_violations(graph)) if (scalling_factor is 0) else
         # exp(-scalling_factor * (max(time_op) + k * self.calc_violations(graph)))
-        self.fitness = max(time_op) + (10 * k * self.calc_violations(graph, False))
+        self.fitness = max(time_op) #+ (10 * k * self.calc_violations(graph, False))
         self.gen = gen
 
         return self.fitness
@@ -143,8 +143,6 @@ class Individual:
         self.code[i:j].reverse()
         self.fitness = 0
 
-
-
     def crossover_SP(self, indv):
 
         p = randint(0, self.operations)
@@ -160,7 +158,6 @@ class Individual:
                          cross_type=self.crossover.__name__[-2:],
                          mut_type=self.mutate.__name__.split('_')[-1])
         return ch1, ch2
-
 
     def crossover_DP(self, indv):
 
