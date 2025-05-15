@@ -63,11 +63,11 @@ class Individual:
             for neighbor in graph[op]:
                 if self.code[neighbor] < self.code[op]:
                     if is_last:
-                        print(f"{op}: {self.code[op]} -> {self.code[neighbor]}")
+                        print(f"{op+1} (station {self.code[op]}) should come after {neighbor+1} (station {self.code[neighbor]})")
                     violations += 1
         return violations
 
-    def calc_fitness(self, gen, graph, times, k=1, scalling_factor=0):
+    def calc_fitness(self, gen, graph, times, k=10, scalling_factor=0):
         """
         Calculates fitness of the code.
 
@@ -83,14 +83,24 @@ class Individual:
         time_op = [0] * self.stations
         for op in range(self.operations):
             self.code[op] = int(self.code[op]) % self.stations
-            time_op[int(self.code[op])] += times[op]
+            if op not in (2, 6, 11, 15, 19, 23, 28):  # operação automática -1 (porque op = 0 é operação 1)
+                time_op[int(self.code[op])] += times[op]
+
+        '''
+        David: this would be a better way to write it:
+        station_times = [0] * self.stations
+        for op in range(self.operations):
+            station = int(self.code[op]) % self.stations
+            station_times[station] += times[op]
+        return max(station_times)
+        '''
 
         # Scalling factor...
         # self.fitness = -exp(scalling_factor * (max(time_op) + k * calc_violations(indv)))
         # No scalling factor
         # self.fitness = max(time_op) + (k * self.calc_violations(graph)) if (scalling_factor is 0) else
         # exp(-scalling_factor * (max(time_op) + k * self.calc_violations(graph)))
-        self.fitness = max(time_op) #+ (10 * k * self.calc_violations(graph, False))
+        self.fitness = max(time_op) + (1000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False)
         self.gen = gen
 
         return self.fitness
@@ -205,5 +215,15 @@ class Individual:
         station_times = [0] * self.stations
         for op in range(self.operations):
             station = int(self.code[op]) % self.stations
-            station_times[station] += times[op]
+            if op not in (2, 6, 11, 15, 19, 23, 28): # operação automática -1 (porque op = 0 é operação 1)
+                station_times[station] += times[op]
         return max(station_times)
+
+"""
+def get_cycle_time(self, times):
+    station_times = [0] * self.stations
+    for op in range(self.operations):
+        station = int(self.code[op]) % self.stations
+        station_times[station] += times[op]
+    return max(station_times)
+"""

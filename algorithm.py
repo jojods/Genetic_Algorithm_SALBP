@@ -174,6 +174,8 @@ def engine(k, num_operations, graph, times, num_stations=10,
 
     if (population[0].calc_violations(graph, True)) > 0:
         print("SOLUCION NO VALIDA: ", population[0].calc_violations(graph, False))
+    else:
+        print("No violations")
 
     print(f"Parameters of the best solution : {[i+1 for i in population[0].code]}")
     print(f"Best solution reached after {population[0].gen} generations.")
