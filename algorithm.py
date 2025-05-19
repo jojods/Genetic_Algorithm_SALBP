@@ -137,7 +137,7 @@ def engine(k, num_operations, graph, times, num_stations=10,
         best.append(population[0].fitness)
         mean.append(reduce(lambda x, y: x + y.fitness, population, 0)/pop_size)
         # Break after:
-        if population[0].gen < i - 50:
+        if population[0].gen < i - 10:
             break
 
 
@@ -169,8 +169,9 @@ def engine(k, num_operations, graph, times, num_stations=10,
 
         # Evaluation
         population = rank_population(k, graph, times, new_generation, i)
-        # print(".")
-        print(f"Gen {i}; Best Fitness: {population[0].fitness}; Cycle time: {population[0].get_cycle_time(times)}")
+        all_station_times = population[0].get_station_time(times)
+        all_operator_times = population[0].get_operator_time(times)
+        print(f"Gen {i}; Best Fitness: {population[0].fitness}; Cycle time: {max(all_operator_times)}; Max station time: {max(all_station_times)}")
 
     if (population[0].calc_violations(graph, True)) > 0:
         print("SOLUCION NO VALIDA: ", population[0].calc_violations(graph, False))
@@ -180,7 +181,14 @@ def engine(k, num_operations, graph, times, num_stations=10,
     print(f"Parameters of the best solution : {[i+1 for i in population[0].code]}")
     print(f"Best solution reached after {population[0].gen} generations.")
     print(f"Fitness of the best solution : {population[0].fitness}")
-    print(f"Cycle time of the best solution: {population[0].get_cycle_time(times)}")
+    all_station_times = population[0].get_station_time(times)
+    all_operator_times = population[0].get_operator_time(times)
+    print(f"Cycle time of the best solution: {max(all_operator_times)}")
+
+
+    print(f"Station times: {[i+1 for i in all_station_times]}")
+    print(f"Operator times: {[i+1 for i in all_operator_times]}")
+
 
     return population[0], best, mean
 
