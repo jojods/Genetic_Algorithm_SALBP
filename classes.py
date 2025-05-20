@@ -90,9 +90,14 @@ class Individual:
         # No scalling factor
         # self.fitness = max(time_op) + (k * self.calc_violations(graph)) if (scalling_factor is 0) else
         # exp(-scalling_factor * (max(time_op) + k * self.calc_violations(graph)))
-        self.fitness = max(time_operator) # + (1000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False)
+
+        # self.fitness = (10000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False) + zmax(time_operator)
+        self.fitness = max(time_operator) + (1000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False)
         if max(time_op) > max(time_operator):
-            self.fitness += 10000
+            self.fitness += 100000
+        if self.fitness == 0:
+            self.fitness = max(time_operator)
+
         self.gen = gen
 
         return self.fitness

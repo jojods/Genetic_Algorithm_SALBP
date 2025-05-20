@@ -7,17 +7,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
 
-def gen_indv(cross_type, mut_type, num_stations, num_operations):
-
+def gen_indv(cross_type, mut_type, num_stations, num_operations, fixed_operations):
+    # print(f"Lenth of fixed: {len(fixed_operations)}")
     code = [randint(0, num_stations - 1) for i in range(num_operations)]
+    for i in range(len(fixed_operations)):
+        code[fixed_operations[i][0]] = fixed_operations[i][1]
+
+    #print(f"Code: {code}")
     return Individual(num_operations, num_stations, code, cross_type=cross_type, mut_type=mut_type)
 
 
-def create_population(pop_size, cross_type, mut_type, num_stations, num_operations):
+def create_population(pop_size, cross_type, mut_type, num_stations, num_operations, fixed_operations):
     """
     Creates the initial population.
 
     Args:
+        fixed_operations: list of fixed operations
         pop_size (int): the size of the population
         cross_type (string): crossing technique
         mut_type (string): mutation technique
@@ -27,7 +32,7 @@ def create_population(pop_size, cross_type, mut_type, num_stations, num_operatio
     Returns:
         (list(Individual)): initial population
     """
-    pop = [gen_indv(cross_type, mut_type, num_stations, num_operations) for i in range(pop_size)]
+    pop = [gen_indv(cross_type, mut_type, num_stations, num_operations, fixed_operations) for i in range(pop_size)]
 
     return pop
 
@@ -80,12 +85,14 @@ def select_by_roulette(population, num=2):
 def engine(k, num_operations, graph, times, num_stations=10,
            pop_size=100, iterations=100,
            perc_elitism=0.1, perc_mat=0.1, sel_type='roulette', cross_type='SP',
-           mutation_rate=0.05, mut_type='random'
+           mutation_rate=0.05, mut_type='random',
+           fixed_operations=None,
            ):
     """
     Performs the genetic algorithm
 
     Args:
+        fixed_operations: matrix of fixed operations
         k (float): Time of the slowest station
         num_operations (int): Number of operations
         graph (dict): Precedence graph of the problem
@@ -109,7 +116,7 @@ def engine(k, num_operations, graph, times, num_stations=10,
         mut_type (String): Mutation operator
                            OPTIONS: - random -> Random mutation (gives a random value to a random element) (default)
                                     - heur -> Heuristic mutation
-                                    - swap -> Swap mutation (select 2 elemtents and swaps them)
+                                    - swap -> Swap mutation (select 2 elements and swaps them)
                                     - scramble -> scramble subset
                                     - inverse -> Inverse subset
 
@@ -119,8 +126,10 @@ def engine(k, num_operations, graph, times, num_stations=10,
         (list(float)): Mean fitness of the population for every generation. Useful for plotting
     """
 
+    if fixed_operations is None:
+        fixed_operations = []
     population = rank_population(k, graph, times,
-                                 create_population(pop_size, cross_type, mut_type, num_stations, num_operations),
+                                 create_population(pop_size, cross_type, mut_type, num_stations, num_operations, fixed_operations),
                                  0)
 
     best = []
@@ -137,9 +146,8 @@ def engine(k, num_operations, graph, times, num_stations=10,
         best.append(population[0].fitness)
         mean.append(reduce(lambda x, y: x + y.fitness, population, 0)/pop_size)
         # Break after:
-        if population[0].gen < i - 10:
+        if population[0].gen < i - 50:
             break
-
 
 
         # Elitism
@@ -229,7 +237,7 @@ def read_file(file_name):
                 break
             ij = line.split(',')
             graph[int(ij[0]) - 1].append(int(ij[1][:-1]) - 1)
-
+    print(f"Graph: {graph}")
     return max(times), len(times), graph, times
 
 
@@ -827,3 +835,15 @@ def get_best_num_stations_effort(k, num_operations, graph, times, i=1, j=10):
     print('Number of stations: %d, time = %d' % (num_stations, my_best))
     print('Individue: ', best_indv)
     return num_stations, best_indv, my_best
+
+
+def read_fixed_op_file(file_path):
+    matrix = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            stripped_line = line.strip()
+            if stripped_line:
+                values = stripped_line.split(',')
+                row = [int(values[0])-1, int(values[1])-1]
+                matrix.append(row)
+    return matrix
