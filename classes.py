@@ -1,8 +1,8 @@
 import copy
 from math import exp
 from random import randint, random
-from numpy.random import permutation
-
+from numpy.random import permutation, choice
+from config import *
 
 class Individual:
     """
@@ -67,7 +67,7 @@ class Individual:
                     violations += 1
         return violations
 
-    def calc_fitness(self, gen, graph, times, k=10, scalling_factor=0):
+    def calc_fitness(self, gen, graph, times, slowest_op=10, scalling_factor=0):
         """
         Calculates fitness of the code.
 
@@ -81,7 +81,6 @@ class Individual:
             (float)
         """
 
-
         time_op = self.get_station_time(times) # time of station **including** automatic-operation time
         time_operator = self.get_operator_time(times) # time of operator **excluding** automatic-operation time
 
@@ -92,9 +91,9 @@ class Individual:
         # exp(-scalling_factor * (max(time_op) + k * self.calc_violations(graph)))
 
         # self.fitness = (10000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False) + zmax(time_operator)
-        self.fitness = max(time_operator) + (1000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False)
+        self.fitness = max(time_operator) + (100000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False)
         if max(time_op) > max(time_operator):
-            self.fitness += 100000
+            self.fitness = self.fitness + 1000000
         if self.fitness == 0:
             self.fitness = max(time_operator)
 
@@ -103,16 +102,19 @@ class Individual:
         return self.fitness
 
     def mutate_random(self):
-        self.code[randint(0, self.operations - 1)] = randint(0, self.stations - 1)
+        op = FREE_OPERATIONS[randint(0, len(FREE_OPERATIONS)-1)]
+        allowed_stations = DATA[op]
+        self.code[op] = allowed_stations[randint(0,len(allowed_stations)-1)] #randint(0, self.stations - 1)
         self.fitness = 0
 
     def mutate_heur(self, graph):
 
         has_changed = False
-        for op in range(self.operations):
+        for op in FREE_OPERATIONS:
             for neighbor in graph[op]:
                 if self.code[neighbor] < self.code[op]:
-                    self.code[op] = randint(0, self.stations - 1)
+                    allowed_stations = DATA[op]
+                    self.code[op] = allowed_stations[randint(0,len(allowed_stations)-1)] #randint(0, self.stations - 1)
                     has_changed = True
 
         if not has_changed:
@@ -150,7 +152,7 @@ class Individual:
         self.code[i:j].reverse()
         self.fitness = 0
 
-    def crossover_SP(self, indv):
+    def crossover_SP(self, indv, graph = None):
 
         p = randint(0, self.operations)
 
@@ -164,6 +166,10 @@ class Individual:
         ch2 = Individual(self.operations, self.stations, code=copy.deepcopy(code_c2),
                          cross_type=self.crossover.__name__[-2:],
                          mut_type=self.mutate.__name__.split('_')[-1])
+        
+        # if ch1.calc_violations(graph, False) > 0 or ch2.calc_violations(graph, False) > 0:
+        #     return self, indv
+
         return ch1, ch2
 
     def crossover_DP(self, indv):
@@ -212,7 +218,7 @@ class Individual:
         station_times = [0] * self.stations
         for op in range(self.operations):
             station = int(self.code[op]) % self.stations
-            if op not in (2, 6, 11, 15, 19, 23, 28): # operação automática -1 (porque op = 0 é operação 1)
+            if op in FREE_OPERATIONS:
                 station_times[station] += times[op]
         return station_times
 
@@ -234,3 +240,79 @@ class Individual:
         operator_times[5] = station_times[10]
 
         return operator_times
+
+# class StationCromossome:
+#     """
+#     Class to represent a cromossome of stations
+#     """
+#     def __init__(self, operations, stations, zoning):
+#         self.operations = operations
+#         self.stations = stations
+#         self.code = self._generate_code(operations, stations, zoning)
+#         self.fitness = 0
+
+#     def _generate_code(operations, zoning):
+#         """
+#         Generate a random code for the cromossome
+#         """
+#         code = [0] * operations
+#         for i in range(operations):
+#             code[i] = choice(zoning[i], 1)[0]
+#         return code
+
+#     def calc_violations():
+#         ...
+
+#     def calc_fitness(self, times, gen):
+#         time_op = self.get_station_time(times) # time of station **including** automatic-operation time
+#         time_operator = self.get_operator_time(times) # time of operator **excluding** automatic-operation time
+
+#         # Scalling factor...
+#         # self.fitness = -exp(scalling_factor * (max(time_op) + k * calc_violations(indv)))
+#         # No scalling factor
+#         # self.fitness = max(time_op) + (k * self.calc_violations(graph)) if (scalling_factor is 0) else
+#         # exp(-scalling_factor * (max(time_op) + k * self.calc_violations(graph)))
+
+#         # self.fitness = (10000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False) + zmax(time_operator)
+#         self.fitness = max(time_operator) + (1000 * self.calc_violations(zoning, False)) #(k * self.calc_violations(graph, False)
+#         if self.fitness == 0:
+#             self.fitness = max(time_operator)
+
+#         self.gen = gen
+
+#         return self.fitness
+    
+#     def mutate():
+#         ...
+    
+#     def crossover():
+#         ...
+
+#     def get_station_time_for_operator(self, times):
+#         station_times = [0] * self.stations
+#         for op in range(self.operations):
+#             station = int(self.code[op]) % self.stations
+#             if op not in self.fixed_operations:
+#                 station_times[station] += times[op]
+
+#         return station_times
+
+#     def get_station_time(self, times):
+#         station_times = [0] * self.stations
+#         for op in range(self.operations):
+#             station = int(self.code[op]) % self.stations
+#             station_times[station] += times[op]
+
+#         return station_times
+
+#     def get_operator_time(self, times):
+#         station_times = self.get_station_time_for_operator(times)
+#         operator_times = [0] * 6
+#         operator_times[0] = station_times[0]+station_times[1]+station_times[2]+station_times[3]
+#         operator_times[1] = station_times[4]+station_times[5]+station_times[6]
+#         operator_times[2] = station_times[7]
+#         operator_times[3] = station_times[8]
+#         operator_times[4] = station_times[9]
+#         operator_times[5] = station_times[10]
+        
+#         return operator_times    
