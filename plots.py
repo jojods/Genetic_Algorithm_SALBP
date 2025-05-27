@@ -1,45 +1,52 @@
 # Importações necessárias
-import networkx as nx
+#import networkx as nx
+from algorithm import engine, to_str
 import matplotlib.pyplot as plt
-from algorithm import read_file_tuple  # Assumindo que a função está em um arquivo separado
+import math
+import numpy as np
+from typing import List 
 
-# Carregar os dados
-k, num_op, graph, times = read_file_tuple('dados_marqueze.txt')
+def show_graph():
+    """
+    Função para mostrar o gráfico de precedência das operações
+    """
+    # Carregar os dados
+    k, num_op, graph, times = read_file_tuple('dados_marqueze.txt')
 
-# Criar um grafo direcionado
-precedence_graph = nx.DiGraph()
+    # Criar um grafo direcionado
+    precedence_graph = nx.DiGraph()
 
-# Adicionar nós (representando tarefas ou operações)
-nodes = graph.keys()
-precedence_graph.add_nodes_from(nodes)
+    # Adicionar nós (representando tarefas ou operações)
+    nodes = graph.keys()
+    precedence_graph.add_nodes_from(nodes)
 
-# Processar as arestas corretamente
-all_edges = []
-for node, neighbors_tuple in graph.items():
-    # Pular o primeiro elemento (que é o próprio nó) e criar pares (node, neighbor)
-    for neighbor in neighbors_tuple[1:]:  # Começando do índice 1 para pular o próprio nó
-        all_edges.append((node, neighbor))
+    # Processar as arestas corretamente
+    all_edges = []
+    for node, neighbors_tuple in graph.items():
+        # Pular o primeiro elemento (que é o próprio nó) e criar pares (node, neighbor)
+        for neighbor in neighbors_tuple[1:]:  # Começando do índice 1 para pular o próprio nó
+            all_edges.append((node, neighbor))
 
-# Adicionar as arestas ao grafo
-precedence_graph.add_edges_from(all_edges)
+    # Adicionar as arestas ao grafo
+    precedence_graph.add_edges_from(all_edges)
 
-# Desenhar o grafo
-plt.figure(figsize=(12, 10))  # Tamanho maior para melhor visualização
-pos = nx.spring_layout(precedence_graph, seed=42)  # Layout mais organizado
+    # Desenhar o grafo
+    plt.figure(figsize=(12, 10))  # Tamanho maior para melhor visualização
+    pos = nx.spring_layout(precedence_graph, seed=42)  # Layout mais organizado
 
-# Desenhar nós e arestas
-nx.draw_networkx_nodes(precedence_graph, pos, node_color='skyblue', node_size=150)
-nx.draw_networkx_edges(precedence_graph, pos, edge_color='gray', arrowsize=15, width=1.5)
-nx.draw_networkx_labels(precedence_graph, pos, font_size=12, font_color='black')
+    # Desenhar nós e arestas
+    nx.draw_networkx_nodes(precedence_graph, pos, node_color='skyblue', node_size=150)
+    nx.draw_networkx_edges(precedence_graph, pos, edge_color='gray', arrowsize=15, width=1.5)
+    nx.draw_networkx_labels(precedence_graph, pos, font_size=12, font_color='black')
 
-# Adicionar título e ajustar margens
-plt.title("Gráfico de Precedência das Operações", fontsize=18)
-plt.margins(0.15)
-plt.axis('off')  # Remover os eixos
-plt.tight_layout()
+    # Adicionar título e ajustar margens
+    plt.title("Gráfico de Precedência das Operações", fontsize=18)
+    plt.margins(0.15)
+    plt.axis('off')  # Remover os eixos
+    plt.tight_layout()
 
-# Mostrar o gráfico
-plt.show()
+    # Mostrar o gráfico
+    plt.show()
 
 def compare_crossover(k, num_operations, graph, times, num_stations=10):
     """
@@ -639,3 +646,21 @@ def read_fixed_op_file(file_path):
                 row = [int(values[0])-1, int(values[1])-1]
                 matrix.append(row)
     return matrix
+
+if __name__ == "__main__":
+    
+    fig, ax = plt.subplots()
+
+    operators: List[str] = ['Op 1', 'Op 2', 'Op 3', 'Op 4', 'Op 5', 'Op 6']
+    stations: List[str] = ['St 1', 'St 2', 'St 3', 'St 4', 'St 5', 'St 6', 'St 7', 'St 8', 'St 9', 'St 10', 'St 11']
+    operators_times: List[float] = [78.87, 58.86, 289.11, 279.33, 286.77, 60.51]
+    stations_times: List[float] = [278.13, 147.3, 206.94, 96.36, 157.32, 137.46, 270.51, 289.11, 279.33, 286.77, 266.49]
+    bar_labels = ['blue']  
+    bar_colors = ['tab:blue']
+
+    ax.bar(stations, stations_times)
+
+    ax.set_ylabel('soma dos tempos (em u.t)')
+    ax.set_title('Somátorio de tempos das tarefas por operador')
+
+    plt.show()

@@ -5,7 +5,7 @@ from config import DATA
 
 
 def main():
-    slowest_op, num_op, graph, times = read_file('dados_marqueze2.txt')
+    slowest_op, num_op, graph, times = read_file('dados_marqueze.txt')
     num_stations = 11
     fixed_operations = read_operations_file('fixed_operations.txt')
 
