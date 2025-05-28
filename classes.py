@@ -3,6 +3,9 @@ from math import exp
 from random import randint, random
 from numpy.random import permutation, choice
 from config import *
+from utils import assign_coupled_operations
+
+data = DADOS_MARQUEZE
 
 class Individual:
     """
@@ -24,7 +27,6 @@ class Individual:
 
     """
     _fitness = 0
-    code = list()
     operations = 0
     stations = 0
     gen = 0
@@ -32,9 +34,9 @@ class Individual:
     def __init__(self, operations, stations, code, cross_type='SP', mut_type='random'):
         self.operations = operations
         self.stations = stations
-        self.code = code
-        self.crossover = eval('self.crossover_' + cross_type)
-        self.mutate = eval('self.mutate_' + mut_type)
+        self.code = list(code)
+        self.crossover = getattr(self, f'crossover_{cross_type}')
+        self.mutate = getattr(self, f'mutate_{mut_type}')
 
     def __repr__(self):
         return str(self.code)
@@ -100,21 +102,31 @@ class Individual:
         self.gen = gen
 
         return self.fitness
+    
+    def _generate_random_station(self, op):
+        allowed_stations = data.zonning[op]
+        return allowed_stations[randint(0, len(allowed_stations) - 1)]
+    
+    def _generate_assign_couples(self, op):
+        """
+        Generates a random station for the operation and assigns it to all coupled operations.
+        """
+        new_station = self._generate_random_station(op)
+        self.code[op] = new_station  # Assign the new station to the operation
+        assign_coupled_operations(self.code, op, new_station, data.couples)
 
     def mutate_random(self):
-        op = FREE_OPERATIONS[randint(0, len(FREE_OPERATIONS)-1)]
-        allowed_stations = DATA[op]
-        self.code[op] = allowed_stations[randint(0,len(allowed_stations)-1)] #randint(0, self.stations - 1)
+        op = data.free_operations[randint(0, len(data.free_operations)-1)]
+        self._generate_assign_couples(op) #randint(0, self.stations - 1)
         self.fitness = 0
 
     def mutate_heur(self, graph):
 
         has_changed = False
-        for op in FREE_OPERATIONS:
+        for op in data.free_operations:
             for neighbor in graph[op]:
                 if self.code[neighbor] < self.code[op]:
-                    allowed_stations = DATA[op]
-                    self.code[op] = allowed_stations[randint(0,len(allowed_stations)-1)] #randint(0, self.stations - 1)
+                    self._generate_assign_couples(op) #randint(0, self.stations - 1)
                     has_changed = True
 
         if not has_changed:
@@ -152,25 +164,19 @@ class Individual:
         self.code[i:j].reverse()
         self.fitness = 0
 
-    def crossover_SP(self, indv, graph = None):
+    def _make_child(self, code):
+        return Individual(
+            self.operations, self.stations, code=copy.deepcopy(code),
+            cross_type=self.crossover.__name__[-2:],
+            mut_type=self.mutate.__name__.split('_')[-1]
+        )
 
+    def crossover_SP(self, indv, graph=None):
         p = randint(0, self.operations)
-
-        code_c1 = self.code[:p] + indv.code[p:]
-        code_c2 = indv.code[:p] + self.code[p:]
-
-        ch1 = Individual(self.operations, self.stations, code=copy.deepcopy(code_c1),
-                         cross_type=self.crossover.__name__[-2:],
-                         mut_type=self.mutate.__name__.split('_')[-1])
-
-        ch2 = Individual(self.operations, self.stations, code=copy.deepcopy(code_c2),
-                         cross_type=self.crossover.__name__[-2:],
-                         mut_type=self.mutate.__name__.split('_')[-1])
-        
-        # if ch1.calc_violations(graph, False) > 0 or ch2.calc_violations(graph, False) > 0:
-        #     return self, indv
-
-        return ch1, ch2
+        return (
+            self._make_child(self.code[:p] + indv.code[p:]),
+            self._make_child(indv.code[:p] + self.code[p:])
+        )
 
     def crossover_DP(self, indv):
 
@@ -179,17 +185,10 @@ class Individual:
         if i > j:
             j, i = i, j
 
-        code_c1 = copy.deepcopy(self.code[:i] + indv.code[i:j] + self.code[j:])
-        code_c2 = copy.deepcopy(indv.code[:i] + self.code[i:j] + indv.code[j:])
-
-        ch1 = Individual(self.operations, self.stations, code=code_c1,
-                         cross_type=self.crossover.__name__[-2:],
-                         mut_type=self.mutate.__name__.split('_')[-1])
-
-        ch2 = Individual(self.operations, self.stations, code=code_c2,
-                         cross_type=self.crossover.__name__[-2:],
-                         mut_type=self.mutate.__name__.split('_')[-1])
-        return ch1, ch2
+        return(
+            self._make_child(self.code[:i] + indv.code[i:j] + self.code[j:]),
+            self._make_child(indv.code[:i] + self.code[i:j] + indv.code[j:])
+        )
 
     def crossover_UX(self, indv):
 
@@ -204,21 +203,16 @@ class Individual:
                 code_c2[i] = self.code[i]
                 code_c1[i] = indv.code[i]
 
-        ch1 = Individual(self.operations, self.stations, code=copy.deepcopy(code_c1),
-                         cross_type=self.crossover.__name__[-2:],
-                         mut_type=self.mutate.__name__.split('_')[-1])
-
-        ch2 = Individual(self.operations, self.stations, code=copy.deepcopy(code_c2),
-                         cross_type=self.crossover.__name__[-2:],
-                         mut_type=self.mutate.__name__.split('_')[-1])
-
-        return ch1, ch2
+        return (
+            self._make_child(code_c1),
+            self._make_child(code_c2)
+        )
 
     def get_station_time_for_operator(self, times):
         station_times = [0] * self.stations
         for op in range(self.operations):
             station = int(self.code[op]) % self.stations
-            if op in FREE_OPERATIONS:
+            if op not in data.automatic_operations:  # Assuming these are fixed operations
                 station_times[station] += times[op]
         return station_times
 
@@ -231,88 +225,4 @@ class Individual:
 
     def get_operator_time(self, times):
         station_times = self.get_station_time_for_operator(times)
-        operator_times = [0] * 6
-        operator_times[0] = station_times[0]+station_times[1]+station_times[2]+station_times[3]
-        operator_times[1] = station_times[4]+station_times[5]+station_times[6]
-        operator_times[2] = station_times[7]
-        operator_times[3] = station_times[8]
-        operator_times[4] = station_times[9]
-        operator_times[5] = station_times[10]
-
-        return operator_times
-
-# class StationCromossome:
-#     """
-#     Class to represent a cromossome of stations
-#     """
-#     def __init__(self, operations, stations, zoning):
-#         self.operations = operations
-#         self.stations = stations
-#         self.code = self._generate_code(operations, stations, zoning)
-#         self.fitness = 0
-
-#     def _generate_code(operations, zoning):
-#         """
-#         Generate a random code for the cromossome
-#         """
-#         code = [0] * operations
-#         for i in range(operations):
-#             code[i] = choice(zoning[i], 1)[0]
-#         return code
-
-#     def calc_violations():
-#         ...
-
-#     def calc_fitness(self, times, gen):
-#         time_op = self.get_station_time(times) # time of station **including** automatic-operation time
-#         time_operator = self.get_operator_time(times) # time of operator **excluding** automatic-operation time
-
-#         # Scalling factor...
-#         # self.fitness = -exp(scalling_factor * (max(time_op) + k * calc_violations(indv)))
-#         # No scalling factor
-#         # self.fitness = max(time_op) + (k * self.calc_violations(graph)) if (scalling_factor is 0) else
-#         # exp(-scalling_factor * (max(time_op) + k * self.calc_violations(graph)))
-
-#         # self.fitness = (10000 * self.calc_violations(graph, False)) #(k * self.calc_violations(graph, False) + zmax(time_operator)
-#         self.fitness = max(time_operator) + (1000 * self.calc_violations(zoning, False)) #(k * self.calc_violations(graph, False)
-#         if self.fitness == 0:
-#             self.fitness = max(time_operator)
-
-#         self.gen = gen
-
-#         return self.fitness
-    
-#     def mutate():
-#         ...
-    
-#     def crossover():
-#         ...
-
-#     def get_station_time_for_operator(self, times):
-#         station_times = [0] * self.stations
-#         for op in range(self.operations):
-#             station = int(self.code[op]) % self.stations
-#             if op not in self.fixed_operations:
-#                 station_times[station] += times[op]
-
-#         return station_times
-
-#     def get_station_time(self, times):
-#         station_times = [0] * self.stations
-#         for op in range(self.operations):
-#             station = int(self.code[op]) % self.stations
-#             station_times[station] += times[op]
-
-#         return station_times
-
-#     def get_operator_time(self, times):
-#         station_times = self.get_station_time_for_operator(times)
-#         operator_times = [0] * 6
-#         operator_times[0] = station_times[0]+station_times[1]+station_times[2]+station_times[3]
-#         operator_times[1] = station_times[4]+station_times[5]+station_times[6]
-#         operator_times[2] = station_times[7]
-#         operator_times[3] = station_times[8]
-#         operator_times[4] = station_times[9]
-#         operator_times[5] = station_times[10]
-        
-#         return operator_times    
+        return [sum((station_times[i]) for i in GROUP) for GROUP in data.operators_group]

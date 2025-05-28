@@ -653,14 +653,15 @@ if __name__ == "__main__":
 
     operators: List[str] = ['Op 1', 'Op 2', 'Op 3', 'Op 4', 'Op 5', 'Op 6']
     stations: List[str] = ['St 1', 'St 2', 'St 3', 'St 4', 'St 5', 'St 6', 'St 7', 'St 8', 'St 9', 'St 10', 'St 11']
-    operators_times: List[float] = [78.87, 58.86, 289.11, 279.33, 286.77, 60.51]
-    stations_times: List[float] = [278.13, 147.3, 206.94, 96.36, 157.32, 137.46, 270.51, 289.11, 279.33, 286.77, 266.49]
+    operators_times: List[float] = [258.0, 201.15, 305.04, 298.5, 301.26, 205.98]
+    stations_times: List[float] = [290.64, 134.79, 206.94, 100.35, 153.33, 137.46, 281.43, 305.04, 298.5, 301.26, 205.98]
     bar_labels = ['blue']  
     bar_colors = ['tab:blue']
 
-    ax.bar(stations, stations_times)
+    ax.bar(operators, operators_times)
 
     ax.set_ylabel('soma dos tempos (em u.t)')
     ax.set_title('Somátorio de tempos das tarefas por operador')
 
     plt.show()
+    

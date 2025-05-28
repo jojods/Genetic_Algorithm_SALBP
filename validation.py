@@ -1,6 +1,5 @@
 from typing import List, Dict
 from classes import Individual
-from config import DATA
 from encoding import read_file
 
 # def printAutomaticStationsTime(autoStat: List[List[int]], times: List[int]) -> None:
@@ -9,18 +8,18 @@ from encoding import read_file
 #     print(f"\nAUTOMATIC STATIONS TIME\n")
 #     print(f"Total time of fixed stations: {sum(auto_stat_times)}")
 
-def printAutomaticStationsTime(autoStat: Dict[int, List[int]], times: List[int], number_of_operations: int) -> None:
-    auto_act = [act for act in range(number_of_operations) if act not in autoStat.keys()]
-    auto_stat_times = [times[actv] for actv in auto_act]
+def printAutomaticStationsTime(autoStat: List[int], times: List[int], number_of_operations: int) -> None:
+    #auto_act = [act for act in range(number_of_operations) if act not in autoStat.keys()]
+    auto_stat_times = [times[actv] for actv in autoStat]
     print(f"\nAUTOMATIC STATIONS TIME\n")
-    print(f"Total time of fixed stations: {sum(auto_stat_times)}")
+    print(f"Total time of fixed stations: {sum(auto_stat_times)/100}")
 
 
 def printParameters(times: int, pop: Individual) -> None:
     print(f"\nPARAMETERS OF THE BEST SOLUTION\n")
     print(f"Cromossome : {[st for st in pop.code]}")
     print(f"Best solution reached after {pop.gen} generations.")
-    print(f"Fitness of the best solution : {pop.fitness}")
+    print(f"Fitness of the best solution : {pop.fitness/100}")
 
 
 def printCycleTime(times: int, pop: Individual) -> None:
@@ -37,7 +36,7 @@ def printCycleTime(times: int, pop: Individual) -> None:
     print(f"Total Operator times: {sum(all_operator_times)/100}")
 
 
-def printResults(times: int, pop: Individual, autoStat: Dict[int, List[int]] | None, num_op: int) -> None:
+def printResults(times: int, pop: Individual, autoStat: List[int] | None, num_op: int) -> None:
     """
     Print the results of the best solution.
     """
@@ -63,6 +62,5 @@ def printStationsDict(num_stations: int, pop: Individual) -> None:
         print(f"Estação {key}: {value}")
 
 if __name__ == "__main__":
-    slowest_op, num_op, graph, times = read_file('dados_marqueze.txt')
-    printAutomaticStationsTime(DATA, times)
+
     pass

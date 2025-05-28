@@ -1,37 +1,38 @@
 from random import random, randint, choice
 from classes import Individual
 from functools import reduce
+from typing import List, Dict
 import numpy as np
-from config import *
-
-def gen_indv(cross_type, mut_type, num_stations, num_operations, possible_stations):
-    # print(f"Lenth of fixed: {len(fixed_operations)}")
-    code = [randint(0, num_stations - 1) for i in range(num_operations)]
-    for i in range(len(possible_stations)):
-        code[possible_stations[i][0]] = possible_stations[i][1]
-
-    #print(f"Code: {code}")
-    return Individual(num_operations, num_stations, code,cross_type, mut_type)
+from config import Zonning_Data
+from utils import assign_coupled_operations
 
 
-def gen_indv_possible(cross_type, mut_type, num_stations, num_operations, possible_stations):
+def gen_indv_possible(cross_type: str, 
+                      mut_type: str, 
+                      num_stations: int, 
+                      num_operations: int, 
+                      possible_stations: Dict[int, List[int]],
+                      couples: Dict[int, List[int]] = None):
     # print(f"Lenth of fixed: {len(fixed_operations)}")
     code = [0]*num_operations
 
-    for act, sts in POSSIBLE_STATIONS_ACT.items():
-        code[act] = sts[randint(0, len(sts) - 1)]
+    for act, sts in possible_stations.items():
+        new_station = sts[randint(0, len(sts) - 1)]
+        code[act] = new_station
+    
+    assign_coupled_operations(code, act, new_station, couples)
 
     #print(f"Code: {code}")
-    return Individual(num_operations, num_stations, code,cross_type, mut_type)
-
-# def gen_indv_zoning(num_stations, num_operations, zoning):
-#     # print(f"Lenth of fixed: {len(fixed_operations)}")
-
-#     #print(f"Code: {code}")
-#     return Individual(num_operations, num_stations, zoning)
+    return Individual(num_operations, num_stations, code, cross_type, mut_type)
 
 
-def create_population(pop_size, cross_type, mut_type, num_stations, num_operations, restricted_stations):
+def create_population(pop_size: int, 
+                      cross_type: str, 
+                      mut_type: str, 
+                      num_stations: str, 
+                      num_operations: int, 
+                      possible_stations: Dict[int, List[int]],
+                      couples: Dict[int, List[int]] = None):
     """
     Creates the initial population.
 
@@ -46,17 +47,9 @@ def create_population(pop_size, cross_type, mut_type, num_stations, num_operatio
     Returns:
         (list(Individual)): initial population
     """
-    pop = [gen_indv_possible(cross_type, mut_type, num_stations, num_operations, restricted_stations) for i in range(pop_size)]
+    pop = [gen_indv_possible(cross_type, mut_type, num_stations, num_operations, possible_stations, couples) for i in range(pop_size)]
 
     return pop
-
-# def create_population_zoning(pop_size, num_stations, num_operations, zoning):
-#     """
-#     Creates the initial population.
-#     """
-#     pop = [gen_indv_zoning(num_stations, num_operations, zoning) for i in range(pop_size)]
-
-#     return pop
 
 
 def rank_population(slowest_op, graph, times, pop, gen):
@@ -74,23 +67,11 @@ def rank_population(slowest_op, graph, times, pop, gen):
         (list(Individual)): Sorted population
     """
 
-    return sorted(pop, key=lambda x:x.calc_fitness(gen, graph, 
+    return sorted(pop, key=lambda x:x.calc_fitness(gen, graph,
                                                    times, slowest_op=slowest_op*10,
                                                    scalling_factor=0)
                                                    if x.fitness == 0 else x.fitness,
                                                    reverse=False)
-
-
-# def rank_population_zoning(slowest_op, graph, times, pop, gen):
-#     """
-#     Return the sorted population.
-#     """
-
-#     return sorted(pop, key=lambda x:x.calc_fitness(gen, graph, 
-#                                                    times, slowest_op=slowest_op*10,
-#                                                    scalling_factor=0)
-#                                                    if x.fitness == 0 else x.fitness,
-#                                                    reverse=False)
 
 
 def select_by_tournament_(population):

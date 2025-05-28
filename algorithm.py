@@ -4,13 +4,11 @@ from classes import Individual
 from functools import reduce
 from random import randint
 from selection import *
+from config import Zonning_Data
 
-
-def engine(slowest_time, num_operations, graph, times, num_stations=10,
-           pop_size=100, iterations=100,
+def engine(zonning: Zonning_Data, pop_size=100, iterations=100,
            perc_elitism=0.1, perc_mat=0.1, sel_type='roulette', cross_type='SP',
-           mutation_rate=0.05, mut_type='random',
-           restricted_stations=None,
+           mutation_rate=0.05, mut_type='random'
            ):
     """
     Performs the genetic algorithm
@@ -49,16 +47,16 @@ def engine(slowest_time, num_operations, graph, times, num_stations=10,
         (list(float)): Fitness of the bests solutions for every generation. Useful for plotting
         (list(float)): Mean fitness of the population for every generation. Useful for plotting
     """
-
-    if restricted_stations is None:
-        fixed_operations = []
-    population = rank_population(slowest_time, graph, times,
-                                 create_population(pop_size, cross_type, mut_type, num_stations, num_operations, restricted_stations),
-                                 0)
+    
+    population = rank_population(zonning.slowest_operation,
+                                 zonning.graph, 
+                                 zonning.times,
+                                 create_population(pop_size, cross_type, mut_type, zonning.number_of_stations,
+                                                   zonning.number_of_operations, zonning.zonning, zonning.couples),
+                                 gen=0)
 
     best = []
     mean = []
-    invalid_sol = True
 
     select = eval('select_by_' + sel_type)
 
@@ -83,28 +81,28 @@ def engine(slowest_time, num_operations, graph, times, num_stations=10,
         for j in range(0, len(the_chosen_ones), 2):
 
             if j == len(the_chosen_ones) - 1:
-                new_generation.append(Individual(num_operations, num_stations, copy.deepcopy(the_chosen_ones[j].code),
+                new_generation.append(Individual(zonning.num_operations, zonning.num_stations, copy.deepcopy(the_chosen_ones[j].code),
                                                 cross_type=cross_type, mut_type=mut_type))
                 mut = 1
             else:
-                new_generation.extend(the_chosen_ones[j].crossover(the_chosen_ones[j+1], graph))
+                new_generation.extend(the_chosen_ones[j].crossover(the_chosen_ones[j+1], zonning.graph))
 
             # Mutation
             for indv in new_generation[-mut:]:
                 if random() < mutation_rate:
                     if mut_type == 'heur':
-                        indv.mutate(graph)
+                        indv.mutate(zonning.graph)
                     else:
                         indv.mutate()
 
         # Evaluation
-        population = rank_population(slowest_time, graph, times, new_generation, i)
-        all_station_times = population[0].get_station_time(times)
-        all_operator_times = population[0].get_operator_time(times)
+        population = rank_population(zonning.slowest_operation, zonning.graph, zonning.times, new_generation, i)
+        all_station_times = population[0].get_station_time(zonning.times)
+        all_operator_times = population[0].get_operator_time(zonning.times)
         print(f"Gen {i}; Best Fitness: {population[0].fitness/100}; Cycle time: {max(all_operator_times)/100}; Max station time: {max(all_station_times)/100}")
         #print(f"Cromossome: {population[0].code}")
 
-        if population[0].calc_violations(graph, False) > 0:
+        if population[0].calc_violations(zonning.graph, False) > 0:
             print(f"Cromossome: {population[0].code}")
         # else:
         #     invalid_sol = False
@@ -112,88 +110,12 @@ def engine(slowest_time, num_operations, graph, times, num_stations=10,
         i = i + 1
 
     # if (population[0].calc_violations(graph, True)) > 0:
-    print("SOLUCION NO VALIDA: ", population[0].calc_violations(graph, True))
+    print("SOLUCION NO VALIDA: ", population[0].calc_violations(zonning.graph, True))
     # else:
     #     # invalid_sol = False
     #     print("No violations")
 
     return population[0], best, mean
-
-# def engine_zoning(slowest_time, num_operations, times, num_stations=10,
-#            pop_size=100, iterations=100,
-#            perc_elitism=0.1, perc_mat=0.1, sel_type='roulette', cross_type='SP',
-#            mutation_rate=0.05, mut_type='random'
-#            ):
-#     """
-#     Performs the genetic algorithm
-#     """
-
-#     population = rank_population(slowest_time, times,
-#                                  create_population(pop_size, cross_type, mut_type, num_stations, num_operations),
-#                                  0)
-
-#     best = []
-#     mean = []
-#     invalid_sol = True
-
-#     select = eval('select_by_' + sel_type)
-
-#     i = 0
-
-#     while (i < iterations): #and invalid_sol:
-
-#         best.append(population[0].fitness)
-#         mean.append(reduce(lambda x, y: x + y.fitness, population, 0)/pop_size)
-#         # Break after:
-#         if population[0].gen < i - 50:
-#             break
-
-#         # Elitism
-#         new_generation = population[:int(perc_elitism*pop_size)]
-
-#         # Selection
-#         the_chosen_ones = select(population[:int(pop_size * perc_mat)], num=(pop_size - int(perc_elitism*pop_size)))
-
-#         mut = 2
-#         # Crossover
-#         for j in range(0, len(the_chosen_ones), 2):
-
-#             if j == len(the_chosen_ones) - 1:
-#                 new_generation.append(Individual(num_operations, num_stations, copy.deepcopy(the_chosen_ones[j].code),
-#                                                 cross_type=cross_type, mut_type=mut_type))
-#                 mut = 1
-#             else:
-#                 new_generation.extend(the_chosen_ones[j].crossover(the_chosen_ones[j+1], graph))
-
-#             # Mutation
-#             for indv in new_generation[-mut:]:
-#                 if random() < mutation_rate:
-#                     if mut_type == 'heur':
-#                         indv.mutate(graph)
-#                     else:
-#                         indv.mutate()
-
-#         # Evaluation
-#         population = rank_population(slowest_time, graph, times, new_generation, i)
-#         all_station_times = population[0].get_station_time(times)
-#         all_operator_times = population[0].get_operator_time(times)
-#         print(f"Gen {i}; Best Fitness: {population[0].fitness}; Cycle time: {max(all_operator_times)}; Max station time: {max(all_station_times)}")
-        
-#         if population[0].calc_violations(graph, False) > 0:
-#             pass
-#         else:
-#             ...
-#             #invalid_sol = False
-            
-#         i = i + 1
-
-#     # if (population[0].calc_violations(graph, True)) > 0:
-#     print("SOLUCION NO VALIDA: ", population[0].calc_violations(graph, True))
-#     # else:
-#     #     # invalid_sol = False
-#     #     print("No violations")
-
-#     return population[0], best, mean
 
 
 def to_str(i):
